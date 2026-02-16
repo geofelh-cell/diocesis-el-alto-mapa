@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Límites de la Diócesis de El Alto</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Leaflet desde CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <style>
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    #map { height: 100vh; width: 100%; }
+    .info { padding: 6px 8px; font: 14px/16px Arial; background: white; background: rgba(255,255,255,0.8); 
+            box-shadow: 0 0 15px rgba(0,0,0,0.2); border-radius: 5px; }
+    .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script>
+    // Mapa centrado en zona de El Alto / Lago Titicaca
+    var map = L.map('map').setView([-16.0, -68.3], 8);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+    function style(feature) {
+      const diocesisProv = [
+        'Muñecas', 'Camacho', 'Manco Kapac', 'Omasuyos', 'Los Andes', 'Ingavi'
+      ];
+      const provName = feature.properties.NAME_2;  // Campo estándar en GADM ADM2 para nombre de provincia
+
+      if (diocesisProv.includes(provName) || provName === 'Murillo') {
+        return {
+          fillColor: '#FF6347',  // Rojo tomate para resaltar
+          weight: 2,
+          opacity: 1,
+          color: 'white',
+          dashArray: '3',
+          fillOpacity: 0.7
+        };
+      }
+      return {
+        fillColor: '#A9A9A9',
+        weight: 1,
+        opacity: 0.8,
+        color: 'white',
+        fillOpacity: 0.3
+      };
+    }
+
+    function onEachFeature(feature, layer) {
+      let popup = '<b>' + (feature.properties.NAME_2 || 'Provincia desconocida') + '</b><br>';
+      if (['Muñecas','Camacho','Manco Kapac','Omasuyos','Los Andes','Ingavi'].includes(feature.properties.NAME_2 || '')) {
+        popup += 'Pertenece completamente a la Diócesis de El Alto.';
+      } else if (feature.properties.NAME_2 === 'Murillo') {
+        popup += 'Parte altiplánica (El Alto, Zongo, Achocalla parcial) pertenece a la Diócesis de El Alto.';
+      } else {
+        popup += 'Fuera de la Diócesis de El Alto.';
+      }
+      layer.bindPopup(popup);
+    }
+
+    // Carga el GeoJSON (asegúrate de subirlo con este nombre exacto)
+    fetch('provincias.geojson')
+      .then(response => {
+        if (!response.ok) throw new Error('GeoJSON no encontrado. Verifica el nombre del archivo.');
+        return response.json();
+      })
+      .then(data => {
+        L.geoJSON(data, {
+          style: style,
+          onEachFeature: onEachFeature
+        }).addTo(map);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Problema cargando el mapa: ' + error.message + '\nVerifica que provincias.geojson esté subido.');
+      });
+
+    // Leyenda
+    var legend = L.control({position: 'bottomright'});
+    legend.onAdd = function () {
+      var div = L.DomUtil.create('div', 'info legend');
+      div.innerHTML += '<i style="background:#FF6347"></i> Diócesis de El Alto<br>';
+      div.innerHTML += '<i style="background:#A9A9A9"></i> Otras áreas<br>';
+      return div;
+    };
+    legend.addTo(map);
+  </script>
+</body>
+</html>
