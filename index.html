@@ -6,37 +6,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Leaflet desde CDN -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5n/N0ZDvEg=" crossorigin="anonymous"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
   
   <style>
-    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; }
     #map { height: 100vh; width: 100%; }
-    .info { padding: 6px 8px; font: 14px/16px Arial; background: white; background: rgba(255,255,255,0.8); 
-            box-shadow: 0 0 15px rgba(0,0,0,0.2); border-radius: 5px; }
-    .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7; }
+    .info { 
+      padding: 6px 8px; 
+      font: 14px/16px Arial, Helvetica, sans-serif; 
+      background: white; 
+      background: rgba(255,255,255,0.8); 
+      box-shadow: 0 0 15px rgba(0,0,0,0.2); 
+      border-radius: 5px; 
+    }
+    .legend i { 
+      width: 18px; 
+      height: 18px; 
+      float: left; 
+      margin-right: 8px; 
+      opacity: 0.7; 
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
   <script>
-    // Mapa centrado en zona de El Alto / Lago Titicaca
+    // Inicializa el mapa centrado en El Alto / Lago Titicaca
     var map = L.map('map').setView([-16.0, -68.3], 8);
 
+    // Capa base OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
+    // Función de estilo para resaltar diócesis
     function style(feature) {
       const diocesisProv = [
         'Muñecas', 'Camacho', 'Manco Kapac', 'Omasuyos', 'Los Andes', 'Ingavi'
       ];
-      const provName = feature.properties.NAME_2;  // Campo estándar en GADM ADM2 para nombre de provincia
+      const provName = feature.properties.NAME_2;
 
       if (diocesisProv.includes(provName) || provName === 'Murillo') {
         return {
-          fillColor: '#FF6347',  // Rojo tomate para resaltar
+          fillColor: '#FF6347',
           weight: 2,
           opacity: 1,
           color: 'white',
@@ -53,6 +67,7 @@
       };
     }
 
+    // Popup al hacer clic
     function onEachFeature(feature, layer) {
       let popup = '<b>' + (feature.properties.NAME_2 || 'Provincia desconocida') + '</b><br>';
       if (['Muñecas','Camacho','Manco Kapac','Omasuyos','Los Andes','Ingavi'].includes(feature.properties.NAME_2 || '')) {
@@ -65,10 +80,12 @@
       layer.bindPopup(popup);
     }
 
-    // Carga el GeoJSON (asegúrate de subirlo con este nombre exacto)
-    fetch('provincias.geojson')
+    // Carga el GeoJSON que ya tienes subido
+    fetch('gadm41_BOL_2.json')
       .then(response => {
-        if (!response.ok) throw new Error('GeoJSON no encontrado. Verifica el nombre del archivo.');
+        if (!response.ok) {
+          throw new Error('No se pudo cargar gadm41_BOL_2.json. Código: ' + response.status);
+        }
         return response.json();
       })
       .then(data => {
@@ -78,8 +95,9 @@
         }).addTo(map);
       })
       .catch(error => {
-        console.error('Error:', error);
-        alert('Problema cargando el mapa: ' + error.message + '\nVerifica que provincias.geojson esté subido.');
+        console.error('Error al cargar GeoJSON:', error);
+        // Puedes dejar el alert para depuración o cambiarlo por un mensaje en pantalla
+        alert('Error cargando los límites provinciales:\n' + error.message + '\nVerifica que gadm41_BOL_2.json esté en la raíz del repositorio.');
       });
 
     // Leyenda
@@ -87,7 +105,7 @@
     legend.onAdd = function () {
       var div = L.DomUtil.create('div', 'info legend');
       div.innerHTML += '<i style="background:#FF6347"></i> Diócesis de El Alto<br>';
-      div.innerHTML += '<i style="background:#A9A9A9"></i> Otras áreas<br>';
+      div.innerHTML += '<i style="background:#A9A9A9"></i> Otras provincias<br>';
       return div;
     };
     legend.addTo(map);
